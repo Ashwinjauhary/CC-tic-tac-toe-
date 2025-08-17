@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Advanced 3D Tic Tac Toe – Catalyst Crew</title>
+<style>
+
+    :root{
+      --bg:#0a0a0a;        
+      --panel:#141414;     
+      --text:#ffffff;      
+      --red:#ff1e1e;       
+      --red-dark:#b30000;  
+      --blue:#1e90ff;
+      --blue-dark:#0066cc;
+      --purple:#8a2be2;
+      --green:#00ff88;
+      --muted:#8a8a8a;
+      --tile:#1e1e1e;
+      --glow: 0 10px 30px rgba(255, 30, 30, .4);
+      --glow-blue: 0 10px 30px rgba(30, 144, 255, .4);
+      --glow-winner: 0 0 50px rgba(0, 255, 136, .8);
+    }
+    
+    *{box-sizing:border-box}
+    html,body{height:100%; overflow-x:hidden;}
+    
+    body{
+      margin:0; 
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+      color:var(--text);
+      background: 
+        radial-gradient(1200px 600px at 90% -30%, rgba(255,30,30,.15), transparent 70%),
+        radial-gradient(900px 500px at -20% 130%, rgba(30,144,255,.12), transparent 70%),
+        radial-gradient(600px 400px at 50% 50%, rgba(138,43,226,.08), transparent 60%),
+        linear-gradient(135deg, #0a0a0a, #1a0a1a, #0a1a1a);
+      min-height:100%; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      padding:15px;
+      position:relative;
+    }
+
+    /* Animated background particles */
+    .particles {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .particle {
+      position: absolute;
+      background: radial-gradient(circle, rgba(255,255,255,0.8), transparent);
+      border-radius: 50%;
+      animation: float 6s ease-in-out infinite;
+    }
+    
+    @keyframes float {
+      0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.1; }
+      50% { transform: translateY(-20px) rotate(180deg); opacity: 0.3; }
+    }
+
+    .wrap{ 
+      width: min(1200px, 98vw); 
+      position: relative;
+      z-index: 1;
+    }
+
+    header{
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between; 
+      gap:20px; 
+      flex-wrap:wrap;
+      background: linear-gradient(135deg, rgba(255,255,255,.12), rgba(255,255,255,.02));
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(255,255,255,.15);
+      border-radius: 24px; 
+      padding: 20px 24px; 
+      box-shadow: 
+        inset 0 1px 0 rgba(255,255,255,.2),
+        0 20px 40px rgba(0,0,0,.3),
+        0 0 100px rgba(255,30,30,.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    header::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.1), transparent);
+      animation: shimmer 3s ease-in-out infinite;
+    }
+    
+    @keyframes shimmer {
+      0% { left: -100%; }
+      100% { left: 100%; }
+    }
+    
+    h1{ 
+      margin:0; 
+      font-size: clamp(20px, 3vw, 32px); 
+      letter-spacing: 1px; 
+      font-weight: 800;
+      background: linear-gradient(135deg, #fff, var(--red), var(--blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      position: relative;
+      z-index: 2;
+    }
+    
+    .badge{ 
+      font-weight: 800; 
+      padding: 10px 16px; 
+      border-radius: 16px; 
+      background: linear-gradient(135deg, var(--red), var(--red-dark), var(--purple));
+      box-shadow: var(--glow), inset 0 1px 0 rgba(255,255,255,.2);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 12px;
+      position: relative;
+      z-index: 2;
+      transition: all 0.3s ease;
+    }
+    
+    .badge:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--glow), 0 10px 30px rgba(0,0,0,.4);
+    }
+
+    .game{
+      margin-top: 25px; 
+      display: grid; 
+      grid-template-columns: 400px 1fr; 
+      gap: 30px; 
+      align-items: start;
+    }
+    
+    @media (max-width: 1000px){ 
+      .game{ grid-template-columns: 1fr; gap: 20px; } 
+      .board-wrap { order: -1; }
+    }
+
+    /* Enhanced Board container with advanced 3D */
+    .board-wrap{
+      perspective: 1200px; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center;
+      background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      backdrop-filter: blur(25px);
+      border: 2px solid rgba(255,255,255,.12); 
+      border-radius: 24px; 
+      padding: 30px; 
+      box-shadow: 
+        0 30px 80px rgba(0,0,0,.5),
+        inset 0 1px 0 rgba(255,255,255,.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .board-wrap::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: conic-gradient(from 0deg, transparent, rgba(255,30,30,.05), transparent, rgba(30,144,255,.05), transparent);
+      animation: rotate 20s linear infinite;
+      z-index: -1;
+    }
+    
+    @keyframes rotate {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+    
+    .board{
+      width: 360px; 
+      height: 360px; 
+      display: grid; 
+      grid-template-columns: repeat(3, 1fr); 
+      grid-template-rows: repeat(3, 1fr);
+      gap: 16px; 
+      transform: rotateX(20deg) rotateY(-15deg); 
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    
+    .board:hover {
+      transform: rotateX(25deg) rotateY(-20deg) scale(1.02);
+    }
+    
+    .cell{
+      background: linear-gradient(145deg, #2a2a2a, #1a1a1a, #0f0f0f);
+      border: 2px solid rgba(255,255,255,.1); 
+      border-radius: 20px; 
+      position: relative; 
+      cursor: pointer;
+      box-shadow: 
+        0 20px 40px rgba(0,0,0,.6), 
+        inset 0 2px 8px rgba(255,255,255,.08),
+        inset 0 -2px 8px rgba(0,0,0,.3);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      transform-style: preserve-3d;
+      overflow: hidden;
+    }
+    
+    .cell::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.1), transparent, rgba(255,255,255,.05));
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .cell:hover::before {
+      opacity: 1;
+    }
+    
+    .cell::after{ 
+      content:""; 
+      position: absolute; 
+      inset: 12px; 
+      border-radius: 16px; 
+      border: 1px solid rgba(255,255,255,.08);
+      transition: all 0.3s ease;
+    }
+    
+    .cell:hover {
+      transform: translateZ(15px) rotateX(5deg);
+      box-shadow: 
+        0 30px 60px rgba(0,0,0,.8), 
+        inset 0 2px 12px rgba(255,255,255,.12),
+        0 0 30px rgba(255,30,30,.2);
+      border-color: rgba(255,30,30,.3);
+    }
+    
+    .cell.dragover{ 
+      border: 2px solid var(--red); 
+      box-shadow: 
+        0 30px 60px rgba(0,0,0,.8), 
+        inset 0 0 30px rgba(255,30,30,.2),
+        0 0 50px var(--red);
+      transform: translateZ(20px) scale(1.05);
+    }
+    
+    .cell.filled{ 
+      cursor: not-allowed; 
+      background: linear-gradient(145deg, #1a1a1a, #2a2a2a);
+    }
+    
+    .cell.winner-cell {
+      animation: winPulse 1.5s ease-in-out infinite;
+      border-color: var(--green) !important;
+      box-shadow: 
+        0 30px 60px rgba(0,0,0,.8), 
+        0 0 50px var(--green),
+        inset 0 0 20px rgba(0,255,136,.2) !important;
+    }
+    
+    @keyframes winPulse {
+      0%, 100% { 
+        transform: translateZ(15px) scale(1);
+        box-shadow: 0 30px 60px rgba(0,0,0,.8), 0 0 30px var(--green);
+      }
+      50% { 
+        transform: translateZ(25px) scale(1.08);
+        box-shadow: 0 40px 80px rgba(0,0,0,.9), 0 0 60px var(--green);
+      }
+    }
+
+    /* Enhanced Pieces Tray */
+    .tray{
+      background: linear-gradient(135deg, rgba(255,255,255,.1), rgba(255,255,255,.02));
+      backdrop-filter: blur(20px);
+      border: 2px solid rgba(255,255,255,.12); 
+      border-radius: 24px; 
+      padding: 25px; 
+      box-shadow: 
+        0 30px 80px rgba(0,0,0,.5),
+        inset 0 1px 0 rgba(255,255,255,.1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .tray::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.3), transparent);
+    }
+    
+    .tray h2{ 
+      margin: 0 0 15px; 
+      font-size: 20px; 
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff, var(--muted));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    
+    .pieces{ 
+      display: flex; 
+      gap: 16px; 
+      align-items: center; 
+      margin-bottom: 20px;
+    }
+
+    .piece{ 
+      width: 80px; 
+      height: 80px; 
+      border-radius: 20px; 
+      display: grid; 
+      place-items: center; 
+      font-size: 42px; 
+      font-weight: 900; 
+      user-select: none;
+      background: linear-gradient(145deg, rgba(255,255,255,.12), rgba(255,255,255,.02));
+      border: 2px solid rgba(255,255,255,.15); 
+      box-shadow: 
+        0 15px 35px rgba(0,0,0,.4),
+        inset 0 2px 8px rgba(255,255,255,.1);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .piece::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,.1), transparent);
+      border-radius: inherit;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    
+    .piece:hover::before {
+      opacity: 1;
+    }
+    
+    .piece[draggable="true"]{ 
+      cursor: grab; 
+    }
+    
+    .piece[draggable="true"]:hover {
+      transform: translateY(-5px) scale(1.05);
+      box-shadow: 
+        0 25px 50px rgba(0,0,0,.6),
+        inset 0 2px 12px rgba(255,255,255,.15);
+    }
+    
+    .piece:active{ 
+      cursor: grabbing; 
+      transform: translateY(2px) scale(0.95); 
+    }
+    
+    .piece.x{ 
+      color: #ffffff; 
+      text-shadow: 0 8px 25px rgba(255,255,255,.4);
+      border-color: rgba(255,255,255,.3);
+    }
+    
+    .piece.x:hover {
+      box-shadow: 
+        0 25px 50px rgba(0,0,0,.6),
+        0 0 40px rgba(255,255,255,.3);
+    }
+    
+    .piece.o{ 
+      color: var(--red); 
+      text-shadow: 0 8px 25px rgba(255,30,30,.5);
+      border-color: rgba(255,30,30,.3);
+    }
+    
+    .piece.o:hover {
+      box-shadow: 
+        0 25px 50px rgba(0,0,0,.6),
+        0 0 40px rgba(255,30,30,.4);
+    }
+
+    .controls{
+      display: flex; 
+      gap: 12px; 
+      margin: 20px 0; 
+      flex-wrap: wrap;
+    }
+    
+    button, select{
+      padding: 12px 18px; 
+      border: none; 
+      border-radius: 16px; 
+      font-weight: 700; 
+      cursor: pointer; 
+      color: #fff;
+      background: linear-gradient(135deg, var(--red), var(--red-dark)); 
+      box-shadow: 
+        0 8px 25px rgba(255,30,30,.3),
+        inset 0 1px 0 rgba(255,255,255,.2);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      border: 1px solid rgba(255,255,255,.1);
+      backdrop-filter: blur(10px);
+    }
+    
+    button:hover{ 
+      transform: translateY(-3px); 
+      box-shadow: 
+        0 15px 35px rgba(255,30,30,.4),
+        inset 0 1px 0 rgba(255,255,255,.3);
+    }
+    
+    button:active{ 
+      transform: translateY(1px); 
+    }
+    
+    .small{ 
+      font-size: 12px; 
+      padding: 8px 14px; 
+      background: linear-gradient(135deg, var(--blue), var(--blue-dark));
+      box-shadow: 
+        0 8px 25px rgba(30,144,255,.3),
+        inset 0 1px 0 rgba(255,255,255,.2);
+    }
+    
+    .small:hover {
+      box-shadow: 
+        0 15px 35px rgba(30,144,255,.4),
+        inset 0 1px 0 rgba(255,255,255,.3);
+    }
+
+    select {
+      background: linear-gradient(135deg, var(--purple), #6a1b9a);
+      box-shadow: 
+        0 8px 25px rgba(138,43,226,.3),
+        inset 0 1px 0 rgba(255,255,255,.2);
+    }
+    
+    select:hover {
+      box-shadow: 
+        0 15px 35px rgba(138,43,226,.4),
+        inset 0 1px 0 rgba(255,255,255,.3);
+    }
+
+    .status{ 
+      margin: 15px 0; 
+      font-size: 16px; 
+      font-weight: 600;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02));
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.1);
+      text-align: center;
+    }
+
+    /* Enhanced Marks */
+    .mark{ 
+      position: absolute; 
+      inset: 0; 
+      display: grid; 
+      place-items: center; 
+      font-size: 72px; 
+      font-weight: 900;
+      animation: markAppear 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+    
+    @keyframes markAppear {
+      0% {
+        opacity: 0;
+        transform: scale(0) rotate(180deg);
+      }
+      50% {
+        opacity: 0.8;
+        transform: scale(1.2) rotate(90deg);
+      }
+      100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+      }
+    }
+    
+    .mark.x{ 
+      color: #fff; 
+      text-shadow: 
+        0 10px 30px rgba(255,255,255,.4),
+        0 0 50px rgba(255,255,255,.2);
+    }
+    
+    .mark.o{ 
+      color: var(--red); 
+      text-shadow: 
+        0 10px 30px rgba(255,30,30,.6),
+        0 0 50px rgba(255,30,30,.3);
+    }
+
+    .credit{ 
+      margin-top: 20px; 
+      font-size: 14px;
+      padding: 12px 16px;
+      background: linear-gradient(135deg, rgba(255,255,255,.05), rgba(255,255,255,.01));
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,.08);
+      text-align: center;
+    }
+    
+    .event-log { 
+      margin-top: 20px; 
+      background: linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02)); 
+      border-radius: 16px; 
+      padding: 16px; 
+      font-size: 13px; 
+      max-height: 200px; 
+      overflow: auto;
+      border: 1px solid rgba(255,255,255,.1);
+      backdrop-filter: blur(10px);
+    }
+    
+    .event-log::-webkit-scrollbar {
+      width: 6px;
+    }
+    
+    .event-log::-webkit-scrollbar-track {
+      background: rgba(255,255,255,.05);
+      border-radius: 3px;
+    }
+    
+    .event-log::-webkit-scrollbar-thumb {
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      border-radius: 3px;
+    }
+    
+    select option {
+      background-color: var(--panel);
+      color: var(--text);
+      padding: 10px;
+    }
+    
+    /* Victory celebration */
+    .celebration {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 1000;
+    }
+    
+    .confetti {
+      position: absolute;
+      width: 10px;
+      height: 10px;
+      background: var(--red);
+      animation: confettiFall 3s ease-out forwards;
+    }
+    
+    @keyframes confettiFall {
+      0% {
+        transform: translateY(-100vh) rotate(0deg);
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+      }
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 768px) {
+      .board { width: 300px; height: 300px; gap: 12px; }
+      .piece { width: 70px; height: 70px; font-size: 36px; }
+      .mark { font-size: 60px; }
+      .controls { justify-content: center; }
+      h1 { font-size: 24px; }
+    }
+    
+    @media (max-width: 480px) {
+      .board { width: 270px; height: 270px; gap: 10px; }
+      .piece { width: 60px; height: 60px; font-size: 32px; }
+      .mark { font-size: 50px; }
+      body { padding: 10px; }
+      .board-wrap, .tray { padding: 20px; }
+    }
+  </style>
+
+</head>
+<body>
+  <div class="particles"></div>
+  
+  <div class="wrap">
+    <header>
+      <h1>🎮 Advanced 3D Tic Tac Toe</h1>
+      <div class="badge">Powered by Catalyst Crew</div>
+    </header>
+
+    <section class="game">
+      <div class="board-wrap">
+        <div id="board" class="board" aria-label="Tic Tac Toe board" role="grid"></div>
+      </div>
+
+      <div>
+        <div class="tray">
+          <h2>🎯 Drag Your Piece</h2>
+          <div class="pieces">
+            <div id="pieceX" class="piece x" draggable="true">✕</div>
+            <div id="pieceO" class="piece o" draggable="true">◯</div>
+          </div>
+          <div class="controls">
+            <select id="mode">
+              <option value="pvp">👥 Player vs Player</option>
+              <option value="ai">🤖 Player vs AI</option>
+            </select>
+            <button id="reset">🔄 Reset Game</button>
+            <button id="swap" class="small">🔄 Swap Turn</button>
+          </div>
+          <div id="status" class="status">✕ to move. Drag onto a square.</div>
+        </div>
+        
+        <div class="credit">
+          🎨 Advanced 3D Design • ✨ Interactive Animations • 🚀 Hyper Responsive
+        </div>
+        
+        <div class="event-log">
+          <strong>📋 Event Log:</strong>
+          <ul id="log" style="margin:8px 0 0; padding-left:20px; list-style:none; color:#ccc;"></ul>
+        </div>
+      </div>
+    </section>
+  </div>
+  
+  <div id="celebration" class="celebration"></div>
+  
+  <script>
+    // Create animated background particles
+    function createParticles() {
+      const particlesContainer = document.querySelector('.particles');
+      for (let i = 0; i < 50; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        particle.style.left = Math.random() * 100 + '%';
+        particle.style.top = Math.random() * 100 + '%';
+        particle.style.width = particle.style.height = (Math.random() * 3 + 1) + 'px';
+        particle.style.animationDelay = Math.random() * 6 + 's';
+        particle.style.animationDuration = (Math.random() * 4 + 4) + 's';
+        particlesContainer.appendChild(particle);
+      }
+    }
+    
+    createParticles();
+
+    const logEl = document.getElementById('log');
+    function addLog(message) {
+      const li = document.createElement('li');
+      li.innerHTML = `<span style="color: var(--green);">•</span> ${message}`;
+      li.style.marginBottom = '4px';
+      li.style.opacity = '0';
+      li.style.transform = 'translateX(-20px)';
+      logEl.appendChild(li);
+      
+      // Animate in
+      setTimeout(() => {
+        li.style.transition = 'all 0.3s ease';
+        li.style.opacity = '1';
+        li.style.transform = 'translateX(0)';
+      }, 10);
+      
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    const boardEl = document.getElementById('board');
+    const cells = [];
+    for(let i=0;i<9;i++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      cell.dataset.index = i;
+      cell.addEventListener('mouseenter', () => {
+        if (!cell.classList.contains('filled') && !gameOver) {
+          cell.style.transform = 'translateZ(15px) rotateX(5deg)';
+        }
+      });
+      cell.addEventListener('mouseleave', () => {
+        if (!cell.classList.contains('filled')) {
+          cell.style.transform = '';
+        }
+      });
+      boardEl.appendChild(cell);
+      cells.push(cell);
+    }
+
+    let board = Array(9).fill(null);
+    let current = 'X';
+    let gameOver = false;
+    let mode = 'pvp';
+    let winningCells = [];
+
+    const statusEl = document.getElementById('status');
+    const pieceX = document.getElementById('pieceX');
+    const pieceO = document.getElementById('pieceO');
+
+    function setDraggable(){
+      pieceX.draggable = !gameOver && current === 'X';
+      pieceO.draggable = !gameOver && current === 'O' && mode === 'pvp';
+      
+      // Visual feedback for draggable state
+      pieceX.style.opacity = pieceX.draggable ? '1' : '0.5';
+      pieceO.style.opacity = pieceO.draggable ? '1' : '0.5';
+      pieceX.style.cursor = pieceX.draggable ? 'grab' : 'not-allowed';
+      pieceO.style.cursor = pieceO.draggable ? 'grab' : 'not-allowed';
+    }
+    setDraggable();
+
+    function handleDragStart(e){
+      if(gameOver) return;
+      const mark = e.target.id === 'pieceX' ? 'X' : 'O';
+      if(mark !== current) return;
+      e.dataTransfer.setData('text/plain', mark);
+      e.target.style.opacity = '0.7';
+    }
+
+    function handleDragEnd(e) {
+      e.target.style.opacity = '';
+    }
+
+    pieceX.addEventListener('dragstart', handleDragStart);
+    pieceO.addEventListener('dragstart', handleDragStart);
+    pieceX.addEventListener('dragend', handleDragEnd);
+    pieceO.addEventListener('dragend', handleDragEnd);
+
+    cells.forEach((cell, index) => {
+      cell.addEventListener('dragover', e => { 
+        if(!gameOver && !cell.classList.contains('filled')) {
+          e.preventDefault();
+          cell.classList.add('dragover');
+        }
+      });
+      
+      cell.addEventListener('dragleave', () => {
+        cell.classList.remove('dragover');
+      });
+      
+      cell.addEventListener('drop', e => {
+        e.preventDefault();
+        cell.classList.remove('dragover');
+        if(gameOver || cell.classList.contains('filled')) return;
+        const mark = e.dataTransfer.getData('text/plain');
+        if(mark !== current) return;
+        placeMark(cell, mark);
+        if(!gameOver && mode === 'ai' && current === 'O') {
+          setTimeout(() => aiMove(), 500); // Add delay for better UX
+        }
+      });
+      
+      cell.addEventListener('click', () => {
+        if(!gameOver && !cell.classList.contains('filled') && (mode === 'pvp' || current === 'X')){
+          placeMark(cell, current);
+          if(!gameOver && mode === 'ai' && current === 'O') {
+            setTimeout(() => aiMove(), 500);
+          }
+        }
+      });
+    });
+
+    function placeMark(cell, mark){
+      const i = +cell.dataset.index;
+      board[i] = mark;
+      cell.classList.add('filled');
+      
+      const m = document.createElement('div');
+      m.className = 'mark ' + mark.toLowerCase();
+      m.textContent = mark === 'X' ? '✕' : '◯';
+      cell.appendChild(m);
+      
+      // Add sound effect simulation with visual feedback
+      cell.style.transform = 'translateZ(25px) scale(1.1)';
+      setTimeout(() => {
+        cell.style.transform = 'translateZ(10px)';
+      }, 200);
+      
+      addLog(`${mark} placed at position ${i+1}`);
+
+      const result = evaluate();
+      if(result.winner){
+        gameOver = true;
+        winningCells = result.winningLine || [];
+        
+        // Highlight winning cells
+        winningCells.forEach(cellIndex => {
+          cells[cellIndex].classList.add('winner-cell');
+        });
+        
+        // Celebration effects
+        if(result.winner !== 'Draw') {
+          createCelebration();
+          addLog(`🎉 ${result.winner} wins the game! 🏆`);
+          statusEl.innerHTML = `🏆 ${result.winner} wins!`;
+        } else {
+          addLog(`🤝 Game ended in a draw`);
+          statusEl.innerHTML = `🤝 It's a draw!`;
+        }
+      } else {
+        current = current === 'X' ? 'O' : 'X';
+        const nextSymbol = current === 'X' ? '✕' : '◯';
+        statusEl.innerHTML = `${nextSymbol} to move.`;
+      }
+      setDraggable();
+    }
+
+    function evaluate(){
+      const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      for(const [a,b,c] of wins){
+        if(board[a] && board[a]===board[b] && board[a]===board[c]) {
+          return { winner: board[a], winningLine: [a,b,c] };
+        }
+      }
+      if(board.every(Boolean)) return { winner: 'Draw' };
+      return { winner: null };
+    }
+
+    function minimax(newBoard, player, depth = 0, alpha = -Infinity, beta = Infinity){
+      const availSpots = newBoard.map((v,i) => v ? null : i).filter(v => v !== null);
+      const result = evaluateBoard(newBoard);
+      
+      if(result === 'X') return {score: -10 + depth};
+      if(result === 'O') return {score: 10 - depth};
+      if(availSpots.length === 0) return {score: 0};
+
+      const moves = [];
+      for(let i of availSpots){
+        const move = {};
+        move.index = i;
+        newBoard[i] = player;
+
+        if(player === 'O'){
+          const result = minimax(newBoard, 'X', depth + 1, alpha, beta);
+          move.score = result.score;
+          alpha = Math.max(alpha, move.score);
+        } else {
+          const result = minimax(newBoard, 'O', depth + 1, alpha, beta);
+          move.score = result.score;
+          beta = Math.min(beta, move.score);
+        }
+        
+        newBoard[i] = null;
+        moves.push(move);
+        
+        // Alpha-beta pruning
+        if(beta <= alpha) break;
+      }
+
+      let bestMove;
+      if(player === 'O'){
+        let bestScore = -Infinity;
+        for(let i=0;i<moves.length;i++){
+          if(moves[i].score > bestScore){
+            bestScore = moves[i].score;
+            bestMove = i;
+          }
+        }
+      } else {
+        let bestScore = Infinity;
+        for(let i=0;i<moves.length;i++){
+          if(moves[i].score < bestScore){
+            bestScore = moves[i].score;
+            bestMove = i;
+          }
+        }
+      }
+      return moves[bestMove];
+    }
+
+    function evaluateBoard(testBoard){
+      const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+      for(const [a,b,c] of wins){
+        if(testBoard[a] && testBoard[a]===testBoard[b] && testBoard[a]===testBoard[c]) return testBoard[a];
+      }
+      return null;
+    }
+
+    function aiMove(){
+      addLog('🤖 AI is thinking...');
+      statusEl.innerHTML = '🤖 AI is thinking...';
+      
+      const best = minimax([...board], 'O');
+      const cell = cells[best.index];
+      
+      // Add thinking animation
+      cell.style.border = '2px solid var(--blue)';
+      cell.style.boxShadow = '0 0 30px var(--blue)';
+      
+      setTimeout(() => {
+        cell.style.border = '';
+        cell.style.boxShadow = '';
+        placeMark(cell, 'O');
+      }, 800);
+    }
+
+    function createCelebration() {
+      const celebration = document.getElementById('celebration');
+      celebration.innerHTML = '';
+      
+      // Create confetti
+      for(let i = 0; i < 100; i++) {
+        const confetti = document.createElement('div');
+        confetti.className = 'confetti';
+        confetti.style.left = Math.random() * 100 + '%';
+        confetti.style.backgroundColor = ['var(--red)', 'var(--blue)', 'var(--green)', '#ffd700', '#ff69b4'][Math.floor(Math.random() * 5)];
+        confetti.style.animationDelay = Math.random() * 3 + 's';
+        confetti.style.animationDuration = (Math.random() * 2 + 3) + 's';
+        celebration.appendChild(confetti);
+      }
+      
+      // Remove confetti after animation
+      setTimeout(() => {
+        celebration.innerHTML = '';
+      }, 6000);
+    }
+
+    function resetGame() {
+      board.fill(null);
+      winningCells = [];
+      cells.forEach(c => { 
+        c.innerHTML = ''; 
+        c.classList.remove('filled', 'winner-cell');
+        c.style.transform = '';
+        c.style.border = '';
+        c.style.boxShadow = '';
+      });
+      current = 'X';
+      gameOver = false;
+      statusEl.innerHTML = '✕ to move. Drag onto a square.';
+      logEl.innerHTML = '';
+      addLog('🎮 New game started!');
+      setDraggable();
+      
+      // Reset board animation
+      boardEl.style.transform = 'rotateX(0deg) rotateY(0deg) scale(0.8)';
+      setTimeout(() => {
+        boardEl.style.transition = 'transform 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+        boardEl.style.transform = 'rotateX(20deg) rotateY(-15deg) scale(1)';
+      }, 100);
+    }
+
+    document.getElementById('reset').addEventListener('click', resetGame);
+
+    document.getElementById('swap').addEventListener('click', () => {
+      if(!gameOver) {
+        current = current === 'X' ? 'O' : 'X';
+        const nextSymbol = current === 'X' ? '✕' : '◯';
+        statusEl.innerHTML = `${nextSymbol} to move.`;
+        addLog(`🔄 Turn swapped. ${current} will move first.`);
+        setDraggable();
+      }
+    });
+
+    document.getElementById('mode').addEventListener('change', e => {
+      mode = e.target.value;
+      const modeText = mode === 'ai' ? '🤖 Player vs AI' : '👥 Player vs Player';
+      addLog(`🎯 Mode changed to: ${modeText}`);
+      setDraggable();
+    });
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', (e) => {
+      if(e.key === 'r' || e.key === 'R') {
+        resetGame();
+      } else if(e.key === 's' || e.key === 'S') {
+        document.getElementById('swap').click();
+      } else if(e.key >= '1' && e.key <= '9' && !gameOver) {
+        const cellIndex = parseInt(e.key) - 1;
+        const cell = cells[cellIndex];
+        if(!cell.classList.contains('filled') && (mode === 'pvp' || current === 'X')) {
+          placeMark(cell, current);
+          if(!gameOver && mode === 'ai' && current === 'O') {
+            setTimeout(() => aiMove(), 500);
+          }
+        }
+      }
+    });
+
+    // Add initial welcome message
+    addLog('🎮 Welcome to Advanced 3D Tic Tac Toe!');
+    addLog('💡 Tip: Use keyboard 1-9 to place pieces, R to reset, S to swap');
+    
+    // Add touch support for mobile
+    let touchStarted = false;
+    
+    cells.forEach(cell => {
+      cell.addEventListener('touchstart', (e) => {
+        touchStarted = true;
+        if(!gameOver && !cell.classList.contains('filled') && (mode === 'pvp' || current === 'X')) {
+          cell.style.transform = 'translateZ(15px) scale(1.05)';
+          cell.style.border = '2px solid var(--red)';
+        }
+      });
+      
+      cell.addEventListener('touchend', (e) => {
+        if(touchStarted) {
+          cell.style.transform = '';
+          cell.style.border = '';
+          if(!gameOver && !cell.classList.contains('filled') && (mode === 'pvp' || current === 'X')) {
+            placeMark(cell, current);
+            if(!gameOver && mode === 'ai' && current === 'O') {
+              setTimeout(() => aiMove(), 500);
+            }
+          }
+        }
+        touchStarted = false;
+      });
+      
+      cell.addEventListener('touchcancel', () => {
+        cell.style.transform = '';
+        cell.style.border = '';
+        touchStarted = false;
+      });
+    });
+  </script>
+</body>
+</html>
